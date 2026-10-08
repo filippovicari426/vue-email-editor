@@ -10,6 +10,7 @@ import type { EmailDocument, EmailNode, EmailNodeType, EmailHeadAttributes } fro
 import { CONTENT_NODE_TYPES } from '../types'
 import { createId } from '../utils/id'
 import { createDefaultDocument } from './node-factory'
+import { expandSelfClosingTags } from './expand-self-closing'
 
 const MJML_NODE_TYPES = new Set<string>([
   'mj-body',
@@ -63,7 +64,7 @@ export function mjmlToDocument(mjmlSource: string): EmailDocument {
 function mjmlToDocumentViaHtml(mjmlSource: string): EmailDocument {
   try {
     const parser = new DOMParser()
-    const doc = parser.parseFromString(mjmlSource, 'text/html')
+    const doc = parser.parseFromString(expandSelfClosingTags(mjmlSource), 'text/html')
 
     const mjmlRoot = doc.querySelector('mjml')
     if (!mjmlRoot) {
