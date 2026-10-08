@@ -491,7 +491,7 @@ function moveExistingNode(nodeId: string, targetNodeId: string, position: DropPo
 
 function openInlineEditor(nodeId: string, rect: DOMRect) {
   const node = findNode(doc.document.value.body, nodeId)
-  if (!node || !CONTENT_NODE_TYPES.includes(node.type)) return
+  if (!node || node.type === 'mj-raw' || !CONTENT_NODE_TYPES.includes(node.type)) return
   inlineEditNodeId.value = nodeId
   inlineEditContent.value = node.htmlContent || ''
   inlineEditRect.value = rect
@@ -527,7 +527,9 @@ function sendHitTest(e: DragEvent, isDrop: boolean) {
 
 function onOverlayDragOver(e: DragEvent) {
   e.preventDefault()
-  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = dragDrop.dragSource.value?.type === 'existing-node' ? 'move' : 'copy'
+  }
   sendHitTest(e, false)
 }
 
