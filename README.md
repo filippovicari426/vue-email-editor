@@ -30,6 +30,7 @@ npm install @lab2view/vue-email-editor vue@^3.4 mjml-browser@^4.15
 <script setup lang="ts">
 import { ref } from 'vue'
 import { EmailEditor } from '@lab2view/vue-email-editor'
+import '@lab2view/vue-email-editor/style.css'
 
 const mjml = ref('')
 const html = ref('')
@@ -46,6 +47,8 @@ const designJson = ref()
   />
 </template>
 ```
+
+> The stylesheet is not injected by the JS bundle. Without the `style.css` import the editor renders unstyled.
 
 That's it. The editor renders a full drag-and-drop email builder with live preview, undo/redo, and HTML export.
 
