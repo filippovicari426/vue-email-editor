@@ -2,7 +2,7 @@
 import { inject, watch, ref, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue'
 import { EMAIL_DOCUMENT_KEY, EMAIL_SELECTION_KEY, EMAIL_DRAG_DROP_KEY } from '../../injection-keys'
 import { EMAIL_LABELS_KEY, DEFAULT_LABELS } from '../../labels'
-import type { IframeMessage, DropPosition, EmailNode } from '../../types'
+import type { IframeMessage, DropPosition, EmailNode, DragSource } from '../../types'
 import { CONTENT_NODE_TYPES } from '../../types'
 import { findNode, findParent } from '../../utils/tree'
 import CanvasOverlay from './CanvasOverlay.vue'
@@ -316,34 +316,35 @@ function handleMessage(e: MessageEvent) {
 
 /** Process hit-test results from iframe */
 function handleHitTestResult(msg: any) {
-  if (!dragDrop.isDragging.value) return
-
   if (msg.isDrop) {
-    // This is a drop action
-    if (msg.nodeId && dragDrop.dragSource.value) {
-      handleDrop(msg.nodeId, msg.position)
+    const source = droppedSource
+    droppedSource = null
+    if (msg.nodeId && source) {
+      handleDrop(source, msg.nodeId, msg.position)
     }
     dropIndicatorRect.value = null
     dragDrop.endDrag()
+    return
+  }
+
+  if (!dragDrop.isDragging.value) return
+
+  if (msg.nodeId) {
+    dragDrop.updateDropTarget({ nodeId: msg.nodeId, position: msg.position })
+    dropIndicatorRect.value = msg.rect
+    dropIndicatorPosition.value = msg.position
   } else {
-    // This is a dragover — update indicator
-    if (msg.nodeId) {
-      dragDrop.updateDropTarget({ nodeId: msg.nodeId, position: msg.position })
-      dropIndicatorRect.value = msg.rect
-      dropIndicatorPosition.value = msg.position
-    } else {
-      dropIndicatorRect.value = null
-      dragDrop.updateDropTarget(null)
-    }
+    dropIndicatorRect.value = null
+    dragDrop.updateDropTarget(null)
   }
 }
 
 // ─── Drop handling ───
 
-function handleDrop(targetNodeId: string, position: DropPosition) {
-  const source = dragDrop.dragSource.value
-  if (!source) return
+// `dragend` clears dragDrop before the iframe answers the drop hit-test, so the source is kept here.
+let droppedSource: DragSource | null = null
 
+function handleDrop(source: DragSource, targetNodeId: string, position: DropPosition) {
   if (source.type === 'new-block') {
     const result = source.block.factory()
     const nodes: EmailNode[] = Array.isArray(result) ? result : [result]
@@ -535,6 +536,7 @@ function onOverlayDragOver(e: DragEvent) {
 
 function onOverlayDrop(e: DragEvent) {
   e.preventDefault()
+  droppedSource = dragDrop.dragSource.value
   sendHitTest(e, true)
 }
 
